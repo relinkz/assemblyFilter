@@ -135,7 +135,7 @@ exitProg:
 section .data
 fileName db 'roller1.raw', 0 ;glöm förfan inte nollan
 ;lenfFileName equ $-fileName ; adress
-outName db 'testText.raw', 0
+outName db 'roller2.raw', 0
 ;lenOutName equ $-fileName
 IMAGE_SIZE equ 64256
 

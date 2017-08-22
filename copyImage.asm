@@ -11,7 +11,7 @@ _start:
 	;call writeToFile		;write the data in data
 	;call closeFileOut		;close file
 
-	call conditionalTest
+	call arrayTest
 	call exitProg			;exit process
 
 openFileIn:
@@ -20,7 +20,7 @@ openFileIn:
 	MOV ebx, fileName
 	MOV edx, 0777
 	int 0x80
-
+	
 	MOV [fd_in], eax	;get pointer to indexbuffer
 	ret
 
@@ -128,12 +128,38 @@ closeFileOut:
 	ret
 
 conditionalTest:
-	MOV dx, 00 		;set dx to 00
-	CMP dx, 00 		;Compare dx with 00
-	JE	printYay	;If yes, then jump to printYay
+	INC edx
+	CMP edx, 10 		;Compare dx with 0
+	JLE conditionalTest
+
+	call printYay
 
 	ret
 
+arrayTest:
+	MOV eax, 3		;nr f bytes to be summed
+	MOV ebx, 0		;EBX will store the sum
+	MOV ecx, x 		;ECX point to current element
+
+top:	
+	ADD ebx, [ecx] 	;move p to ebx
+	ADD ecx, 1		;move p to next element
+	DEC eax 		;decrement counter
+	JNZ top			;if counter not 0 then loop again
+
+done:
+	ADD ebx, '0'
+	mov [sum], ebx 	;done, store result in sum
+
+display:
+	MOV eax, 4
+	MOV ebx, 1
+	MOV ecx, sum
+	MOV edx, 1
+	int 0x80
+
+	MOV eax, 1
+	int 0x80
 
 printYay:
 	;output the message
@@ -152,12 +178,22 @@ exitProg:
 
 
 section .data
+
 fileName db 'roller1.raw', 0 ;glöm förfan inte nollan
 outName db 'roller2.raw', 0
 IMAGE_SIZE equ 64256
 
 yayString db 'Yay', 0
 yayStringLen equ $-yayString
+
+global x
+x:
+	db 2
+	db 4
+	db 3
+
+sum:
+	db 0
 
 section .bss
 fd_out resb 1

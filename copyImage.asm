@@ -20,13 +20,13 @@ openFileIn:
 	MOV ebx, fileName
 	MOV edx, 0777
 	int 0x80
-	
+
 	MOV [fd_in], eax	;get pointer to indexbuffer
 	ret
 
 openFileOut:
  	;opening the file roller1.raw
-	MOV eax, 5
+ 	MOV eax, 5
 	MOV ebx, outName
 	MOV edx, 0777
 	int 0x80
@@ -137,18 +137,21 @@ conditionalTest:
 	ret
 
 arrayTest:
-	MOV eax, 3		;nr f bytes to be summed
-	MOV ebx, 0		;EBX will store the sum
-	MOV ecx, x 		;ECX point to current element
+	MOV eax, 3			;nr f bytes to be summed
+	MOV ebx, 0			;EBX will store the sum
+	MOV ecx, dataArr	;ECX point to current element
 
 top:	
-	ADD ebx, [ecx] 	;move p to ebx
+	ADD ebx, [ecx] 	;move p to , [] means value of p
 	ADD ecx, 1		;move p to next element
+	
+	ADD ebx, eax    ;add counter value to sum
+
 	DEC eax 		;decrement counter
 	JNZ top			;if counter not 0 then loop again
 
 done:
-	ADD ebx, '0'
+	ADD ebx, '0'	;convert the sum from ?decimal? to ASCII
 	mov [sum], ebx 	;done, store result in sum
 
 display:
@@ -186,11 +189,9 @@ IMAGE_SIZE equ 64256
 yayString db 'Yay', 0
 yayStringLen equ $-yayString
 
-global x
-x:
-	db 2
-	db 4
-	db 3
+dataArr times 64256 dw 0
+
+
 
 sum:
 	db 0

@@ -3,35 +3,35 @@ section .text
 
 _start:
 
-	;call openFileIn			;open the org image
-	;call readFromFileIn		;read the data
-	;call closeFileIn		;close file
+	call openFileIn			;open the org image
+	call readFromFileIn		;read the data
+	call closeFileIn		;close file
 
-	;call openFileOut		;open output file
-	;call writeToFile		;write the data in data
-	;call closeFileOut		;close file
+	call openFileOut		;open output file
+	call writeToFile		;write the data in data
+	call closeFileOut		;close file
 
-	call arrayTest
 	call exitProg			;exit process
 
 openFileIn:
-	;opening the file roller1.raw
-	MOV eax, 5
-	MOV ebx, fileName
-	MOV edx, 0777
+ 	;opening the file roller1.raw
+	mov eax, 5
+	mov ebx, fileName
+	mov edx, 0777
 	int 0x80
 
-	MOV [fd_in], eax	;get pointer to indexbuffer
+	mov [fd_in], eax	;get pointer to indexbuffer
 	ret
 
 openFileOut:
  	;opening the file roller1.raw
- 	MOV eax, 5
-	MOV ebx, outName
-	MOV edx, 0777
+	mov eax, 5
+	mov ebx, outName
+	;mov ecx, 1
+	mov edx, 0777
 	int 0x80
 
-	MOV [fd_out], eax	;get pointer to indexbuffer
+	mov [fd_out], eax	;get pointer to indexbuffer
 	ret
 
 writeToFile:
@@ -42,12 +42,13 @@ writeToFile:
 	;5. call kernel
 
 	;returns the actual nr of bytes written in EAX
-
-	MOV eax, 4
-	MOV ebx, [fd_out]
-	MOV ecx, info
-	MOV edx, IMAGE_SIZE
+	
+	mov eax, 4
+	mov ebx, [fd_out]
+	mov ecx, info
+	mov edx, IMAGE_SIZE
 	int 0x80
+
 	ret
 
 readFromFileIn:
@@ -63,10 +64,10 @@ readFromFileIn:
 	;register, in case of error code is in the EAX register
 
 	;read the file
-	MOV eax, 3
-	MOV ebx, [fd_in]    ;pointer to inputBuffer
-	MOV ecx, info		;buffer size
-	MOV edx, IMAGE_SIZE
+	mov eax, 3
+	mov ebx, [fd_in]    ;pointer to inputBuffer
+	mov ecx, info		;buffer size
+	mov edx, IMAGE_SIZE
 	int 0x80
 
 	ret
@@ -84,10 +85,10 @@ readFromFileOut:
 	;register, in case of error code is in the EAX register
 
 	;read the file
-	MOV eax, 3
-	MOV ebx, [fd_in]    ;pointer to inputBuffer
-	MOV ecx, info		;buffer size
-	MOV edx, IMAGE_SIZE
+	mov eax, 3
+	mov ebx, [fd_in]    ;pointer to inputBuffer
+	mov ecx, info		;buffer size
+	mov edx, IMAGE_SIZE
 	int 0x80
 
 	ret
@@ -98,11 +99,11 @@ printBuffer:
 	;3. put the data into ECX
 	;4. put the size of the segment in EDX
 	;5. call kernel 
-   	MOV eax, 4
-   	MOV ebx, 1
-   	MOV ecx, info
-   	MOV edx, IMAGE_SIZE
-
+   	mov eax, 4
+   	mov ebx, 1
+   	mov ecx, info
+   	mov edx, IMAGE_SIZE
+   	
    	int 0x80
    	ret
 
@@ -110,8 +111,8 @@ closeFileIn:
 	;Closing a file
 	;1.Put the system call sys_close(), 6, in the EAX register
 	;2.Put the file descriptor in the EBX register
-	MOV EAX, 6
-	MOV EBX, [fd_in]
+	mov EAX, 6
+	mov EBX, [fd_in]
 	int 80h
 
 	;the system call returns error code in eax
@@ -121,57 +122,10 @@ closeFileOut:
 	;Closing a file
 	;1.Put the system call sys_close(), 6, in the EAX register
 	;2.Put the file descriptor in the EBX register
-	MOV EAX, 6
-	MOV EBX, [fd_out]
+	mov EAX, 6
+	mov EBX, [fd_out]
 	int 80h
 
-	ret
-
-conditionalTest:
-	INC edx
-	CMP edx, 10 		;Compare dx with 0
-	JLE conditionalTest
-
-	call printYay
-
-	ret
-
-arrayTest:
-	MOV eax, 3			;nr f bytes to be summed
-	MOV ebx, 0			;EBX will store the sum
-	MOV ecx, dataArr	;ECX point to current element
-
-top:	
-	ADD ebx, [ecx] 	;move p to , [] means value of p
-	ADD ecx, 1		;move p to next element
-	
-	ADD ebx, eax    ;add counter value to sum
-
-	DEC eax 		;decrement counter
-	JNZ top			;if counter not 0 then loop again
-
-done:
-	ADD ebx, '0'	;convert the sum from ?decimal? to ASCII
-	mov [sum], ebx 	;done, store result in sum
-
-display:
-	MOV eax, 4
-	MOV ebx, 1
-	MOV ecx, sum
-	MOV edx, 1
-	int 0x80
-
-	MOV eax, 1
-	int 0x80
-
-printYay:
-	;output the message
-	MOV eax, 4
-	MOV ebx, 1
-	MOV ecx, yayString
-	MOV edx, yayStringLen
-	int 0x80
-	
 	ret
 
 exitProg:
@@ -179,22 +133,12 @@ exitProg:
 	mov eax, 1
 	int 0x80
 
-
 section .data
-
 fileName db 'roller1.raw', 0 ;glöm förfan inte nollan
+;lenfFileName equ $-fileName ; adress
 outName db 'roller2.raw', 0
-IMAGE_SIZE equ 64256
-
-yayString db 'Yay', 0
-yayStringLen equ $-yayString
-
-dataArr times 64256 dw 0
-
-
-
-sum:
-	db 0
+;lenOutName equ $-fileName
+IMAGE_SIZE equ 10
 
 section .bss
 fd_out resb 1

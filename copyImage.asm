@@ -43,11 +43,78 @@ writeToFile:
 
 	;returns the actual nr of bytes written in EAX
 	
+	;mov ecx, [info + 2]
+	;mov [blurr], ecx
+
+	;mov ax, [info + 2]
+	;movzx eax, ax
+	;mov bx, [info + 3]
+	;movzx ebx, bx
+
+	;d6 + d5 = 1AB
+	;add eax, ebx
+	;mov [blurr], eax
+
+	call blurrTopRow
+
+
+	;mov eax, 4
+	;mov ebx, [fd_out]
+	;mov ecx, info
+	;mov edx, IMAGE_SIZE
+	;int 0x80
+
+
+
 	mov eax, 4
 	mov ebx, [fd_out]
-	mov ecx, info
-	mov edx, IMAGE_SIZE
+	mov ecx, blurr
+	mov edx, 1
 	int 0x80
+
+	ret
+
+blurrTopRow:
+	;from 0 - 251 there will be no pixels above the active pixel
+
+	;first pixel
+	mov eax, 0;
+	;mov eax, [info + 0]
+
+	;add pixel beside it (1)
+	;add eax, [info + 1]
+
+	;add pixels below(2)
+	;add eax, [info + 251]	;just below
+	;add eax, [info + 252] 	;beside it
+
+	;divsion here, edx has to be 0
+	;mov eax, [info]
+	;mov eax, [info + 1]
+
+	mov al, byte [info + 251]
+	;mov eax, 0
+	mov [sum], al
+
+	mov ah, 0
+	mov al, byte [info + 252]
+	add [sum], ax
+
+	;mov eax, 171
+	;mov eax, 370
+	;mov eax, 200
+	;add eax, 200
+
+	mov eax, 0 
+	mov ax, [sum]
+
+	mov ebp, 7 
+	mov edx, 0
+	idiv ebp
+
+	mov [blurr], al
+
+	;contine down the row
 
 	ret
 
@@ -138,9 +205,11 @@ fileName db 'roller1.raw', 0 ;glöm förfan inte nollan
 ;lenfFileName equ $-fileName ; adress
 outName db 'roller2.raw', 0
 ;lenOutName equ $-fileName
-IMAGE_SIZE equ 10
+IMAGE_SIZE equ 64256
 
 section .bss
 fd_out resb 1
 fd_in resb 1
 info resb 64256
+blurr resb 64256
+sum resw 1

@@ -18,6 +18,7 @@ openFileIn:
 	mov eax, 5
 	mov ebx, fileName
 	mov edx, 0777
+	mov ecx, 0
 	int 0x80
 
 	mov [fd_in], eax	;get pointer to indexbuffer
@@ -27,7 +28,7 @@ openFileOut:
  	;opening the file roller1.raw
 	mov eax, 5
 	mov ebx, outName
-	;mov ecx, 1
+	mov ecx, 1
 	mov edx, 0777
 	int 0x80
 
@@ -40,7 +41,7 @@ writeToFile:
 	;3. Put the pointer to data in ECX
 	;4. Put buffer size of data in EDX
 	;5. call kernel
-
+	
 	;returns the actual nr of bytes written in EAX
 	
 	;mov ecx, [info + 2]
@@ -69,7 +70,7 @@ writeToFile:
 	mov eax, 4
 	mov ebx, [fd_out]
 	mov ecx, blurr
-	mov edx, 1
+	mov edx, 2
 	int 0x80
 
 	ret
@@ -77,44 +78,34 @@ writeToFile:
 blurrTopRow:
 	;from 0 - 251 there will be no pixels above the active pixel
 
-	;first pixel
-	mov eax, 0;
-	;mov eax, [info + 0]
+	mov al, byte [info + 0] 	 ;add the pixel itself
+	movzx ax, al 		         ;convert byte to word
+	
+	add [sum], ax 				 ;store sum all pixels in sum
 
-	;add pixel beside it (1)
-	;add eax, [info + 1]
+	mov al, byte [info + 1] 	 ;add pixel beside it (1)
+	movzx ax, al 				 ;convert from byte to word al->ax
 
-	;add pixels below(2)
-	;add eax, [info + 251]	;just below
-	;add eax, [info + 252] 	;beside it
+	add [sum], ax 				 ;add to sum
 
-	;divsion here, edx has to be 0
-	;mov eax, [info]
-	;mov eax, [info + 1]
+	mov al, byte [info + 251]    ;add the pixels below the first pixel
+	movzx ax, al 				 ;convert byte to word
 
-	mov al, byte [info + 251]
-	;mov eax, 0
-	mov [sum], al
+	add [sum], ax 				 ;add to sum
 
-	mov ah, 0
-	mov al, byte [info + 252]
-	add [sum], ax
+	mov al, byte [info + 252] 	 ;add pixel beside, bot-left
+	movzx ax, al 				 ;convert byte to word
 
-	;mov eax, 171
-	;mov eax, 370
-	;mov eax, 200
-	;add eax, 200
+	add [sum], ax    			 ;add to sum
 
-	mov eax, 0 
-	mov ax, [sum]
+	mov ax, [sum] 				 ;prep sum for divition
+	movzx eax, ax 				 ;convert word to full 32-bit register
 
-	mov ebp, 7 
-	mov edx, 0
-	idiv ebp
+	mov ebp, 7 	 				 ;Divition by 7
+	mov edx, 0 					 ;how many rest products that are stored
+	div ebp 					 ;call divition
 
-	mov [blurr], al
-
-	;contine down the row
+	mov [blurr + 0], al 		 ;save value to blurr
 
 	ret
 

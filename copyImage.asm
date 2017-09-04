@@ -70,7 +70,7 @@ writeToFile:
 	mov eax, 4
 	mov ebx, [fd_out]
 	mov ecx, blurr
-	mov edx, 6
+	mov edx, 64005
 	int 0x80
 
 	ret
@@ -112,14 +112,242 @@ blurrTopRow:
 	;[o][x][o] r1
 	;[o][o][o] r2
 
-	mov ecx, 0
+	mov ecx, 1					;ecx is the iterator
+	call firstRow				;loop through all upper pixels
+
+	;last pixel in row
+	;[o][x]
+	;[o][o]
+
+	mov [sum], word 0			;reset sum
+
+	mov al, byte [info + 249]	;add top left pixel
+	movzx ax, al 				;convert byte to word
+
+	add [sum], ax 				;add value to sum
+
+	mov al, byte [info + 250]	;add the processing pixel
+	movzx ax, al 				;convert byte to word
+
+	add [sum], ax   			;add to sum
+
+	mov al, byte [info + 249 + 251] ;bot left pixel
+	movzx ax, al 					;convert byte to word
+
+	add [sum], ax
+
+	mov al, byte [info + 250 + 251] ;bot pixel
+	movzx ax, al
+
+	add [sum], ax 				;add to sum
+
+	mov ax, [sum] 				 ;prep sum for divition
+	movzx eax, ax 				 ;convert word to full 32-bit register
+
+	mov ebp, 4 	 				 ;Divition by 4
+	mov edx, 0 					 ;how many rest products that are stored
+	div ebp 					 ;call divition
+
+	mov [blurr + 250], al 		 ;save value to blurr
+
+	mov ecx, 0					 ;cl holds the x coordinate
+	mov [activePixel], word 0       ;dl holds the y coordinate
+
+	;move on to the next rows
+	call middleRow
+
+
+	ret
+
+middleRow:
+	
+	;row 1 to 255 will take 9 pixels as average
+
+	;[o][o]
+	;[x][o]
+	;[o][o]
+	mov dx, [activePixel]
+	movzx edx, dx
+
+	mov al, byte [info + edx + ecx - 251] ; pixel above
+	movzx ax, al
+
+	mov [sum], ax
+
+	mov al, byte [info + edx + ecx - 250] ; top right pixel
+	movzx ax, al
+
+	add [sum], ax
+
+	mov al, byte [info + edx + ecx] 		;the pixel itself
+	movzx ax, al
+
+	add [sum], ax
+
+	mov al, byte [info + edx + ecx + 1] 	;mid right pixel
+	movzx ax, al
+
+	add [sum], ax
+
+	mov al, byte [info + edx + ecx + 251] ;pixel bottom 
+	movzx ax, al
+
+	add [sum], ax
+
+	mov al, byte [info + edx + ecx + 252]  ;bot right pixel
+	movzx ax, al
+
+	add [sum], ax
+
+	mov ax, [sum] 				 ;prep sum for divition
+	movzx eax, ax 				 ;convert word to full 32-bit register
+
+	mov ebp, 6 	 				 ;Divition by 4
+	mov edx, 0 					 ;how many rest products that are stored
+	div ebp 					 ;call divition
+
+	mov dx, [activePixel]
+	movzx edx, dx
+
+	mov [blurr + edx + ecx], al
+
+
+	;[o][o][o]
+	;[o][x][o]
+	;[o][o][o]
+
+	call middleLoop
+
+	;[o][o]
+	;[o][x]
+	;[o][o]
+
+	mov [sum], word 0			;reset sum
+
+	mov al, byte [info + edx + ecx - 250 - 1] 	;top-teft pixel
+	movzx ax, al 						;convert byte to word
+
+	add [sum], ax 					;add value to sum
+
+	mov al, byte [info + edx + ecx - 250]	;top pixel
+	movzx ax, al 					;convert byte to word
+
+	add [sum], ax   				;add to sum
+
+	mov al, byte [info + edx + ecx - 1] 	;mid-left pixel
+	movzx ax, al 					;convert byte to word
+
+	add [sum], ax 					;add to sum
+
+	mov al, byte [info + edx + ecx] 		;Processing pixel
+	movzx ax, al
+
+	add [sum], ax 					;add to sum
+
+	mov al, byte [info + edx + ecx + 250] ;bot left
+	movzx ax, al
+
+	add [sum], ax
+
+	mov al, byte [info + edx + ecx + 251] ;pixel bottom 
+	movzx ax, al
+
+	add [sum], ax
+
+	mov ax, [sum] 				 ;prep sum for divition
+	movzx eax, ax 				 ;convert word to full 32-bit register
+
+	mov ebp, 4 	 				 ;Divition by 4
+	mov edx, 0 					 ;how many rest products that are stored
+	div ebp 					 ;call divition
+
+	mov dx, [activePixel]
+	movzx edx, dx
+
+	mov [blurr + edx + ecx], al 		 ;save value to blurr
+
+	ret
+
+middleLoop:
+
+
+	mov [sum], word 0
+	
+	mov al, 1
+	movzx ax, al
+
+	mov dx, [activePixel]
+	movzx edx, dx
+
+	mov al, byte [info + edx + ecx - 250] ; top left
+	movzx ax, al
+
+	mov [sum], ax
+
+	mov al, byte [info + edx + ecx - 251] ; pixel above
+	movzx ax, al
+
+	mov [sum], ax
+
+	mov al, byte [info + edx + ecx - 250] ; top right pixel
+	movzx ax, al
+
+	add [sum], ax
+
+	mov al, byte [info + edx + ecx -1] 		;mid left
+	movzx ax, al
+
+	add [sum], ax
+
+	mov al, byte [info + edx + ecx] 		;the pixel itself
+	movzx ax, al
+
+	add [sum], ax
+
+	mov al, byte [info + edx + ecx + 1] 	;mid right pixel
+	movzx ax, al
+
+	add [sum], ax
+
+	mov al, byte [info + edx + ecx + 250] ;bot left
+	movzx ax, al
+
+	add [sum], ax
+
+	mov al, byte [info + edx + ecx + 251] ;pixel bottom 
+	movzx ax, al
+
+	add [sum], ax
+
+	mov al, byte [info + edx + ecx + 252]  ;bot right pixel
+	movzx ax, al
+
+	add [sum], ax
+
+	mov ax, [sum] 				 ;prep sum for divition
+	movzx eax, ax 				 ;convert word to full 32-bit register
+
+	mov ebp, 9 	 				 ;Divition by 9
+	mov edx, 0 					 ;how many rest products that are stored
+	div ebp 					 ;call divition
+
+	mov dx, [activePixel]
+	movzx edx, dx
+
+	mov [blurr + edx + ecx], byte al
+
+	inc ecx 						;ecx is x iterator
+	cmp ecx, 250
+	jl middleLoop
+
+	ret
+
+firstRow:
 
 	;loop here
 
 	;reset sum
 	mov [sum], word 0
-
-	inc ecx 						;ecx is iterator
 	
 	;first row (r1)
 
@@ -169,23 +397,9 @@ blurrTopRow:
 
 	mov [blurr + ecx], al
 
-	;mov al, byte [info + 1 - 1]
-	;mov [blurr + 0], al
-
-	;mov al, byte [info + 1]
-	;mov [blurr + 1], al
-
-	;mov al, byte [info + 1 + 1]
-	;mov [blurr + 2], al
-
-	;mov al, byte [info + 1 + 250]
-	;mov [blurr + 3], al
-
-	;mov al, byte [info + 1 + 251]
-	;mov [blurr + 4], al
-
-	;mov al, byte [info + 1 + 252]
-	;mov [blurr + 5], al
+	inc ecx 						;ecx is iterator
+	cmp ecx, 250
+	jl firstRow
 
 	ret
 
@@ -249,7 +463,7 @@ closeFileIn:
 	;Closing a file
 	;1.Put the system call sys_close(), 6, in the EAX register
 	;2.Put the file descriptor in the EBX register
-	mov EAX, 6
+	mov EAX, 4
 	mov EBX, [fd_in]
 	int 80h
 

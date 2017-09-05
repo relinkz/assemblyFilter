@@ -70,7 +70,7 @@ writeToFile:
 	mov eax, 4
 	mov ebx, [fd_out]
 	mov ecx, blurr
-	mov edx, 64005
+	mov edx, 250 + 250
 	int 0x80
 
 	ret
@@ -107,12 +107,13 @@ blurrTopRow:
 	mov edx, 0 					 ;how many rest products that are stored
 	div ebp 					 ;call divition
 
-	mov [blurr + 0], al 		 ;save value to blurr
+	mov [blurr], al 		 ;save value to blurr
 
 	;[o][x][o] r1
 	;[o][o][o] r2
 
 	mov ecx, 1					;ecx is the iterator
+
 	call firstRow				;loop through all upper pixels
 
 	;last pixel in row
@@ -150,8 +151,15 @@ blurrTopRow:
 
 	mov [blurr + 250], al 		 ;save value to blurr
 
-	mov ecx, 0					 ;cl holds the x coordinate
-	mov [activePixel], word 0       ;dl holds the y coordinate
+	mov cl, 251					 ;cl holds the offset
+	movzx cx, cl
+	movzx ecx, cx
+
+	mov al, 250 					;offset for rows
+	movzx ax, al 					;convert to word
+
+	mov [offset], al 				;throw it in to the offset
+
 
 	;move on to the next rows
 	call middleRow
@@ -166,35 +174,33 @@ middleRow:
 	;[o][o]
 	;[x][o]
 	;[o][o]
-	mov dx, [activePixel]
-	movzx edx, dx
 
-	mov al, byte [info + edx + ecx - 251] ; pixel above
+	mov al, byte [info + ecx - 251] ; pixel above
 	movzx ax, al
 
 	mov [sum], ax
 
-	mov al, byte [info + edx + ecx - 250] ; top right pixel
+	mov al, byte [info + ecx - 250] ; top right pixel
 	movzx ax, al
 
 	add [sum], ax
 
-	mov al, byte [info + edx + ecx] 		;the pixel itself
+	mov al, byte [info + ecx] 		;the pixel itself
 	movzx ax, al
 
 	add [sum], ax
 
-	mov al, byte [info + edx + ecx + 1] 	;mid right pixel
+	mov al, byte [info + ecx + 1] 	;mid right pixel
 	movzx ax, al
 
 	add [sum], ax
 
-	mov al, byte [info + edx + ecx + 251] ;pixel bottom 
+	mov al, byte [info + ecx + 251] ;pixel bottom 
 	movzx ax, al
 
 	add [sum], ax
 
-	mov al, byte [info + edx + ecx + 252]  ;bot right pixel
+	mov al, byte [info + ecx + 252]  ;bot right pixel
 	movzx ax, al
 
 	add [sum], ax
@@ -206,10 +212,10 @@ middleRow:
 	mov edx, 0 					 ;how many rest products that are stored
 	div ebp 					 ;call divition
 
-	mov dx, [activePixel]
-	movzx edx, dx
 
-	mov [blurr + edx + ecx], al
+	mov [blurr + ecx], al
+
+	inc ecx 			;first pixel done
 
 
 	;[o][o][o]
@@ -224,32 +230,32 @@ middleRow:
 
 	mov [sum], word 0			;reset sum
 
-	mov al, byte [info + edx + ecx - 250 - 1] 	;top-teft pixel
+	mov al, byte [info + ecx - 250 - 1] 	;top-teft pixel
 	movzx ax, al 						;convert byte to word
 
 	add [sum], ax 					;add value to sum
 
-	mov al, byte [info + edx + ecx - 250]	;top pixel
+	mov al, byte [info + ecx - 250]	;top pixel
 	movzx ax, al 					;convert byte to word
 
 	add [sum], ax   				;add to sum
 
-	mov al, byte [info + edx + ecx - 1] 	;mid-left pixel
+	mov al, byte [info + ecx - 1] 	;mid-left pixel
 	movzx ax, al 					;convert byte to word
 
 	add [sum], ax 					;add to sum
 
-	mov al, byte [info + edx + ecx] 		;Processing pixel
+	mov al, byte [info + ecx] 		;Processing pixel
 	movzx ax, al
 
 	add [sum], ax 					;add to sum
 
-	mov al, byte [info + edx + ecx + 250] ;bot left
+	mov al, byte [info + ecx + 250] ;bot left
 	movzx ax, al
 
 	add [sum], ax
 
-	mov al, byte [info + edx + ecx + 251] ;pixel bottom 
+	mov al, byte [info + ecx + 251] ;pixel bottom 
 	movzx ax, al
 
 	add [sum], ax
@@ -261,10 +267,16 @@ middleRow:
 	mov edx, 0 					 ;how many rest products that are stored
 	div ebp 					 ;call divition
 
-	mov dx, [activePixel]
-	movzx edx, dx
+	mov [blurr + ecx], al 		 ;save value to blurr
+	inc ecx
 
-	mov [blurr + edx + ecx], al 		 ;save value to blurr
+	;mov [blurr + ecx], byte 0xFF 		 ;save value to blurr
+
+	;row done
+
+	;mov ax, 63750
+	;cmp cx, ax
+	;jl middleRow
 
 	ret
 
@@ -272,54 +284,48 @@ middleLoop:
 
 
 	mov [sum], word 0
-	
-	mov al, 1
-	movzx ax, al
 
-	mov dx, [activePixel]
-	movzx edx, dx
-
-	mov al, byte [info + edx + ecx - 250] ; top left
+	mov al, byte [info + ecx - 250] ; top left
 	movzx ax, al
 
 	mov [sum], ax
 
-	mov al, byte [info + edx + ecx - 251] ; pixel above
+	mov al, byte [info + ecx - 251] ; pixel above
 	movzx ax, al
 
 	mov [sum], ax
 
-	mov al, byte [info + edx + ecx - 250] ; top right pixel
+	mov al, byte [info + ecx - 250] ; top right pixel
 	movzx ax, al
 
 	add [sum], ax
 
-	mov al, byte [info + edx + ecx -1] 		;mid left
+	mov al, byte [info + ecx -1] 		;mid left
 	movzx ax, al
 
 	add [sum], ax
 
-	mov al, byte [info + edx + ecx] 		;the pixel itself
+	mov al, byte [info + ecx] 		;the pixel itself
 	movzx ax, al
 
 	add [sum], ax
 
-	mov al, byte [info + edx + ecx + 1] 	;mid right pixel
+	mov al, byte [info + ecx + 1] 	;mid right pixel
 	movzx ax, al
 
 	add [sum], ax
 
-	mov al, byte [info + edx + ecx + 250] ;bot left
+	mov al, byte [info + ecx + 250] ;bot left
 	movzx ax, al
 
 	add [sum], ax
 
-	mov al, byte [info + edx + ecx + 251] ;pixel bottom 
+	mov al, byte [info + ecx + 251] ;pixel bottom 
 	movzx ax, al
 
 	add [sum], ax
 
-	mov al, byte [info + edx + ecx + 252]  ;bot right pixel
+	mov al, byte [info + ecx + 252]  ;bot right pixel
 	movzx ax, al
 
 	add [sum], ax
@@ -331,14 +337,44 @@ middleLoop:
 	mov edx, 0 					 ;how many rest products that are stored
 	div ebp 					 ;call divition
 
-	mov dx, [activePixel]
-	movzx edx, dx
 
-	mov [blurr + edx + ecx], byte al
+	mov [blurr + ecx], byte al
+	inc ecx
+	
+	mov eax, ecx
 
-	inc ecx 						;ecx is x iterator
-	cmp ecx, 250
+	mov [blurr + 495], byte ch
+	mov [blurr + 496], byte cl
+
+	mov ax, word [offset]
+
+	mov [blurr + 498], byte ah
+	mov [blurr + 499], byte al
+
+	sub cx, word [offset]
+	;movzx ecx, cx
+	 						;ecx is x iterator
+	
+	mov al, 250
+	movzx ax, al
+
+	cmp cx, ax
 	jl middleLoop
+
+	;the middle loop is done, save to offset
+	add [offset], cx
+
+	movzx ecx, cx
+	mov ecx, eax
+
+	;mov eax, ecx
+
+	;mov ebp, 250
+	;mov edx, 1
+	;div ebp
+
+	;cmp edx, 0 				;ecx % 500, modulu
+	;jnz middleRow
 
 	ret
 
@@ -498,4 +534,4 @@ fd_in resb 1
 info resb 64256
 blurr resb 64256
 sum resw 1
-activePixel resw 1
+offset resw 1

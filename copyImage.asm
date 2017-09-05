@@ -70,7 +70,7 @@ writeToFile:
 	mov eax, 4
 	mov ebx, [fd_out]
 	mov ecx, blurr
-	mov edx, 250 + 250
+	mov edx, 63750
 	int 0x80
 
 	ret
@@ -270,13 +270,18 @@ middleRow:
 	mov [blurr + ecx], al 		 ;save value to blurr
 	inc ecx
 
+	mov ax, word 250
+	add [offset], ax
+
 	;mov [blurr + ecx], byte 0xFF 		 ;save value to blurr
 
 	;row done
 
-	;mov ax, 63750
-	;cmp cx, ax
-	;jl middleRow
+	mov ax, 63750
+	movzx eax, ax
+
+	cmp ecx, eax
+	jl middleRow
 
 	ret
 
@@ -338,43 +343,21 @@ middleLoop:
 	div ebp 					 ;call divition
 
 
-	mov [blurr + ecx], byte al
-	inc ecx
-	
-	mov eax, ecx
+	mov [blurr + ecx], byte al    ;store last pixel in row
 
-	mov [blurr + 495], byte ch
-	mov [blurr + 496], byte cl
+	inc ecx 					;move pointer to next row
+	mov edx, ecx
 
-	mov ax, word [offset]
+	mov ax, [offset]
+	movzx eax, ax
 
-	mov [blurr + 498], byte ah
-	mov [blurr + 499], byte al
+	sub edx, eax
+	;sub edx, 250
 
-	sub cx, word [offset]
-	;movzx ecx, cx
-	 						;ecx is x iterator
-	
-	mov al, 250
-	movzx ax, al
-
-	cmp cx, ax
+	cmp edx, 250
 	jl middleLoop
 
-	;the middle loop is done, save to offset
-	add [offset], cx
-
-	movzx ecx, cx
-	mov ecx, eax
-
-	;mov eax, ecx
-
-	;mov ebp, 250
-	;mov edx, 1
-	;div ebp
-
-	;cmp edx, 0 				;ecx % 500, modulu
-	;jnz middleRow
+	;add [offset], ax
 
 	ret
 

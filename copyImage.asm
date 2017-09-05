@@ -57,6 +57,17 @@ writeToFile:
 	;mov [blurr], eax
 
 	call blurrTopRow
+	
+	call middleRow ;move on to the next rows
+
+	call blurrLastRow
+
+	mov cx, word [offset]
+	movzx ecx, cx
+
+	mov [blurr + 64254], ch
+	mov [blurr + 64254], cl
+
 
 
 	;mov eax, 4
@@ -70,7 +81,7 @@ writeToFile:
 	mov eax, 4
 	mov ebx, [fd_out]
 	mov ecx, blurr
-	mov edx, 63750
+	mov edx, 64256
 	int 0x80
 
 	ret
@@ -159,11 +170,6 @@ blurrTopRow:
 	movzx ax, al 					;convert to word
 
 	mov [offset], al 				;throw it in to the offset
-
-
-	;move on to the next rows
-	call middleRow
-
 
 	ret
 
@@ -273,8 +279,6 @@ middleRow:
 	mov ax, word 250
 	add [offset], ax
 
-	;mov [blurr + ecx], byte 0xFF 		 ;save value to blurr
-
 	;row done
 
 	mov ax, 63750
@@ -282,6 +286,10 @@ middleRow:
 
 	cmp ecx, eax
 	jl middleRow
+
+	mov [blurr + 64252], ch
+	mov [blurr + 64252], cl
+
 
 	ret
 
@@ -421,6 +429,155 @@ firstRow:
 	jl firstRow
 
 	ret
+
+blurrLastRow:
+	;[o][o]
+	;[x][o]
+
+	mov al, byte [info +ecx + 0] 	 ;add the pixel itself
+	movzx ax, al 		         ;convert byte to word
+	
+	add [sum], ax 				 ;store sum all pixels in sum
+
+	mov al, byte [info +ecx + 1] 	 ;add pixel beside it (1)
+	movzx ax, al 				 ;convert from byte to word al->ax
+
+	add [sum], ax 				 ;add to sum
+
+	mov al, byte [info + ecx - 251]  ;add the pixels below the first pixel
+	movzx ax, al 				 ;convert byte to word
+
+	add [sum], ax 				 ;add to sum
+
+	mov al, byte [info + ecx - 252] 	 ;add pixel beside, bot-left
+	movzx ax, al 				 ;convert byte to word
+
+	add [sum], ax    			 ;add to sum
+
+	mov ax, [sum] 				 ;prep sum for divition
+	movzx eax, ax 				 ;convert word to full 32-bit register
+
+	mov ebp, 4 	 				 ;Divition by 7
+	mov edx, 0 					 ;how many rest products that are stored
+	div ebp 					 ;call divition
+
+	mov [blurr + ecx], al 		 ;save value to blurr
+	inc ecx
+
+	;[o][o][o] r1
+	;[o][x][o] r2
+
+	call lastRow				;loop through all upper pixels
+
+	;last pixel in row
+	;[o][o]
+	;[o][x]
+
+	mov [sum], word 0			;reset sum
+
+	mov al, byte [info + ecx - 1]	;add top left pixel
+	movzx ax, al 				;convert byte to word
+
+	add [sum], ax 				;add value to sum
+
+	mov al, byte [info + ecx + 250]	;add the processing pixel
+	movzx ax, al 				;convert byte to word
+
+	add [sum], ax   			;add to sum
+
+	mov al, byte [info + ecx - 251] ;bot left pixel
+	movzx ax, al 					;convert byte to word
+
+	add [sum], ax
+
+	mov al, byte [info + ecx - 251] ;bot pixel
+	movzx ax, al
+
+	add [sum], ax 				;add to sum
+
+	mov ax, [sum] 				 ;prep sum for divition
+	movzx eax, ax 				 ;convert word to full 32-bit register
+
+	mov ebp, 4 	 				 ;Divition by 4
+	mov edx, 0 					 ;how many rest products that are stored
+	div ebp 					 ;call divition
+
+	mov [blurr + ecx], al 		 ;save value to blurr
+	inc ecx
+
+	mov cl, 251					 ;cl holds the offset
+	movzx cx, cl
+	movzx ecx, cx
+
+	mov al, 250 					;offset for rows
+	movzx ax, al 					;convert to word
+
+	mov [offset], al 				;throw it in to the offset
+
+	ret
+
+lastRow:
+	;reset sum
+	mov [sum], word 0
+	
+	;first row (r1)
+
+	mov al, byte [info + ecx]		;read pixel i, pixel to blurr
+	movzx ax, al 					;convert byte to word
+
+	mov [sum], ax 					;store into sum
+
+	mov al, byte [info + ecx - 1]	;get pixel i-1
+	movzx ax, al 					;convert byte to word
+
+	add [sum], ax 					;add to sum
+
+	mov al, byte [info + ecx + 1] 	;get pixel i + 1
+	movzx ax, al 					;convert byte to word
+
+	add [sum], ax 					;add to sum
+
+	;Done with the first row
+	;second row (r2)
+
+	mov al, byte [info + ecx - 250] ;get pixel i+ 250
+	movzx ax, al 					;convert byte to word
+
+	add [sum], ax 					;add to sum
+
+	mov al, byte [info + ecx - 251] ;get pixel i+ 251
+	movzx ax, al 					;convert byte to word
+
+	add [sum], ax 					;add to sum
+
+	mov al, byte [info + ecx - 252] ;get pixel i + 252
+	movzx ax, al 					;convert byte to word
+
+	add [sum], ax
+
+	mov ax, [sum] 				 ;prep sum for divition
+	movzx eax, ax 				 ;convert word to full 32-bit register
+
+	mov ebp, 6 	 				 ;Divition by 7
+	mov edx, 0 					 ;how many rest products that are stored
+	div ebp 					 ;call divition
+
+	;second pixel is correctly blurred
+	;next up is to do a jump condition that does this to
+	;all 250 times, for all upper rows
+
+	mov [blurr + ecx], al
+
+	inc ecx 						;ecx is iterator
+	cmp ecx, 64254 					;next last pixel in image
+	jl lastRow
+
+	;mov [blurr + 64255], ch
+	;mov [blurr + 64255], byte 0xff
+
+
+	ret
+
 
 readFromFileIn:
 	;Process: Read from file
